@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -47,10 +47,11 @@ async def create_user(db: db_dependency, create_user_request: CreateUserSchema):
         name=create_user_request.name,
         email=create_user_request.email,
         hashed_password=bcrypt_context.hash(create_user_request.hashed_password),
-        role=create_user_request.role
+        role=create_user_request.role  
     )
     db.add(create_user_model)
     db.commit()
+    return {"message": "Usuario creado exitosamente"}
     
 @app.post("/Login", response_model=Token)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency):
@@ -59,7 +60,8 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
                             detail="Could not validate credentials")
         
-    token= create_access_token(user.email, user.id, timedelta(minutes=20))
+    token= create_access_token(user.email, user.id,user.role, expires_delta=timedelta(minutes=20))
+    expire = datetime.utcnow() + timedelta(minutes=20)
     return {"access_token": token, "token_type": "bearer"}
     
 def authenticate_user(email: str, password: str, db):
@@ -70,8 +72,8 @@ def authenticate_user(email: str, password: str, db):
         return False
     return user
 
-def create_access_token(email: str, user_id: int, expires_delta: timedelta ):
-    encode = {"sub": email, "id": user_id}
+def create_access_token(email: str, user_id: int, role: str, expires_delta: timedelta ):
+    encode = {"sub": email, "id": user_id, "role": role}
     expires = datetime.utcnow() + expires_delta
     encode.update({"exp": expires})
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -90,4 +92,43 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Could not validate credentials")
 
+@app.get("/me")
+def get_me(current_user: dict = Depends(get_current_user)):
+    return current_user 
+    
+@app.get("/users")
+def get_users(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para ver todos los usuarios"
+        )
+    users = db.query(Users).all()
+    return users
 
+
+@app.delete("/users/{id}")
+def delete_user(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para eliminar usuarios"
+        )
+
+    user = db.query(Users).filter(Users.id == id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    db.delete(user)
+    db.commit()
+    return {"message": f"Usuario con id {id} eliminado exitosamente"}
