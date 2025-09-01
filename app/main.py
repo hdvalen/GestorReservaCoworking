@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.auth import router as auth 
-from app.routes import room_router, reservation_router
+from app.routes.roomRouter import room_router
+from app.routes.reservationRouter import reservation_router
 
 
 

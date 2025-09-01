@@ -3,10 +3,10 @@ from starlette import status
 from sqlalchemy.orm import Session
 from typing import Annotated, List
 from app.config.database import SessionLocal, Base
-from app.models.reservation_model import Reservations
+from app.models.reservationModel.reservation_model import Reservations
 from sqlalchemy import Column, Integer, String
 from app.auth.auth import get_current_user
-from app.controllers.reservation_controller import  CreateReservationSchema
+from app.controllers.reservationController.reservation_controller import  CreateReservationSchema
 
 
 app=APIRouter()
