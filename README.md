@@ -92,33 +92,14 @@ nameProject/
    pip install -r requirements.txt
    ```
 
-4. **Configurar variables de entorno**
+5. **Ejecutar Proyecto**
    ```bash
-   # Copiar archivo de ejemplo
-   cp .env.example .env
-   
-   # Editar .env con tus configuraciones:
-   # - Credenciales de MySQL
-   # - Configuración JWT
-   # - Configuración Auth0
-   ```
-
-5. **Configurar base de datos**
-   ```bash
-   # Conectar a MySQL y ejecutar:
-   mysql -u tu_usuario -p tu_base_de_datos < app/data/docsFlowEstructura.sql
-   mysql -u tu_usuario -p tu_base_de_datos < app/data/docsFlowData.sql
+    uvicorn app.main:app --reload 
    ```
 
 ### ⚙️ Variables de Entorno (.env)
 
 ```env
-# Base de Datos
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=tu_usuario
-DB_PASSWORD=tu_password
-DB_NAME=reservas_salas
 
 # JWT Configuration
 JWT_SECRET_KEY=tu_clave_secreta_muy_segura
